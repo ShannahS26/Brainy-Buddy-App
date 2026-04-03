@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime,ForeignKey,Enum
+from sqlalchemy.orm import relationship
 from app.db.database import Base
 import datetime
 import enum
@@ -26,8 +27,9 @@ class Parents(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, nullable=False,index=True)
     email = Column(String(100), unique=True,nullable=False,index=True)
-    password_hash = Column(String(50),nullable=False)
+    password_hash = Column(String(100),nullable=False)
     created_at = Column(DateTime,default=datetime.datetime.utcnow)
+    children = relationship("User", backref = "parent")
 
 class Topic(Base):
     __tablename__ = "topic"
