@@ -42,25 +42,24 @@ def read_root():
 # ----------------------
 # Student Routes
 # ----------------------
-@app.post("/register", response_model=UserResponse)
-def student_register(user: UserCreate, db: Session = Depends(get_db)):
-    existing = db.query(User).filter((User.username == user.username) | (User.email == user.email)).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Username or email already exists")
+# @app.post("/register", response_model=UserResponse)
+# def student_register(user: UserCreate, db: Session = Depends(get_db)):
+#     existing = db.query(User).filter((User.username == user.username) | (User.email == user.email)).first()
+#     if existing:
+#         raise HTTPException(status_code=400, detail="Username or email already exists")
 
-    new_user = User(
-        username=user.username,
-        email=user.email,
-        password_hash=hash_password(user.password)
-    )
+#     new_user = User(
+#         username=user.username,
+#         email=user.email,
+#         password_hash=hash_password(user.password)
+#     )
 
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
+#     db.add(new_user)
+#     db.commit()
+#     db.refresh(new_user)
+#     return new_user
 
-
-@app.post("/login")
+@app.post("/student/login")
 def student_login(user: UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.username == user.username).first()
     if not db_user or not verify_password(user.password, db_user.password_hash):
@@ -122,6 +121,39 @@ def get_current_user(token=Security(security)):
         raise HTTPException(status_code=401, detail="Invalid token")
     return payload
 
+@app.post("/parent/create-child", response_model=UserResponse)
+def create_child(
+    user: UserCreate,
+    db: Session = Depends(get_db),
+    current = Depends(get_current_user)
+):
+    if current["role"] != "parent":
+        raise HTTPException(status_code = 403, detail="Only parent can create child account")
+    existing = db.query(User).filter(
+        (User.username == user.username) | (User.email == user.email)
+    ).first()
+
+    if existing:
+        raise HTTPException(status_code=400, detail="Username or email already exists")
+    
+    parent = db.query(Parents).filter(Parents.username == current["sub"]).first()
+
+    if not parent:
+        raise HTTPException(status_code=404, detail="Parent not found")
+
+    new_user = User(
+        username = user.username,
+        email = user.email,
+        password_hash = hash_password(user.password),
+        parent_id = parent.id
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return new_user
+
 
 @app.get("/dashboard")
 def dashboard(user=Depends(get_current_user)):
@@ -129,3 +161,15 @@ def dashboard(user=Depends(get_current_user)):
         "message": f"Welcome {user['role']} {user['sub']}!",
         "role": user["role"]
     }
+
+# ----------------------
+# View Point
+# ----------------------
+@app.get("/parent/children")
+def get_children(db:Session = Depends(get_db), current=Depends(get_current_user)):
+    if current ["role"] != "parent":
+        raise HTTPException(status_code=403, detail="Only parents allowed")
+    
+    parent = db.query(Parents).filter(Parents.username == current["sub"]).first()
+    
+    return parent.children

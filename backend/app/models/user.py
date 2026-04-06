@@ -21,6 +21,7 @@ class User(Base):
     email = Column(String(100), unique=True, index=True)
     password_hash = Column(String(100), nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    parent = relationship("Parents", back_populates= "children")
 
 class Parents(Base):
     __tablename__ = "parents"
@@ -29,7 +30,7 @@ class Parents(Base):
     email = Column(String(100), unique=True,nullable=False,index=True)
     password_hash = Column(String(100),nullable=False)
     created_at = Column(DateTime,default=datetime.datetime.utcnow)
-    children = relationship("User", backref = "parent")
+    children = relationship("User", back_populates = "parent")
 
 class Topic(Base):
     __tablename__ = "topic"
