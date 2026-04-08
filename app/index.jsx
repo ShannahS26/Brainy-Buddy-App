@@ -45,10 +45,13 @@ export default function WelcomeScreen() {
   );
 }
 
+// Hex codes:
+// '#7EE8FA'
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#7EE8FA',
+    backgroundColor: '#5cbbcc',
   },
   content: {
     flex: 1,

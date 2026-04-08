@@ -17,6 +17,26 @@ export default function ParentAuthScreen() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
+    const testBackend = async () => {
+        try {
+            console.log("Testing backend at:", `$(API_BASE_URL)/docs`);
+
+            const response = await fetch(`${API_BASE_URL}/docs`);
+            const text = await response.text();
+
+            console.log("Backend response status:", response.status);
+
+            if (response.ok){
+                Alert.alert("Success", "Backend is reachable!");
+            } else {
+                Alert.alert("Error", `Backend responded with status ${response.status}`);
+            }
+        } catch {
+            console.log("Backend test error: ", error);
+            Alert.alert("Error", "Could not connect to backend");
+        }
+    };
+
     const handleParentAuth = async () => {
         try {
             const endpoint = 
@@ -27,7 +47,10 @@ export default function ParentAuthScreen() {
                     ? { username, password }
                     : {username, email, password};
 
-            const response = await fetch("http://127.0.0.1:8000/parent/register", {
+            console.log("Calling:", `${API_BASE_URL}${endpoint}`);
+            console.log("Body:", body);
+
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -53,8 +76,8 @@ export default function ParentAuthScreen() {
             Alert.alert("Success", "Logged in successfully!");
             router.push("/createChild");
         } catch (error) {
+            console.log("Connection error:", error);
             Alert.alert("Error", "Could not connect to server");
-            console.log(error);
         }
     };
 
@@ -126,11 +149,81 @@ export default function ParentAuthScreen() {
                 <TouchableOpacity onPress={() => router.back()}>
                     <Text style={styles.backText}>Back</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity  style={[styles.submitBtn, {marginTop: 12}]} onPress={testBackend}>
+                    <Text style={styles.backText}>Test Backend</Text>
+                </TouchableOpacity>
+                
             </View>
         </SafeAreaView>
     )
 }
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1, 
+        backgroundColor: '#5cbbcc',
+        justifyContent: "center",
+        padding: 24,
+    },
 
-})
+    card: {
+        backgroundColor: "#FFF9F3",
+        borderRadius: 28,
+        padding: 24,
+        elevation: 6,
+    },
+
+    title: {
+        fontSize: 30, 
+        fontWeight: "900",
+        color: "#355c9a",
+        textAlign: "center",
+        marginBottom: 20,
+    },
+    toggleRow: {
+        flexDirection: "row",
+        backgroundColor: "#eaf9fd",
+        borderRadius: 18,
+        marginBottom: 20,
+        overflow: "hidden",
+    },
+    toggleButton: {
+        flex: 1, 
+        paddingVertical: 14,
+        alignItems: "center",
+    },
+    activeToggle: {
+        backgroundColor: "#FFD45a",
+    },
+    toggleText: {
+        fontWeight: "800",
+        color: "#355c9a",
+    },
+    input: {
+        backgroundColor: "#fff",
+        borderRadius: 18,
+        paddingHorizontal: 18,
+        paddingVertical: 14,
+        marginBottom: 14,
+        fontSize: 16,
+    },
+    submitBtn: {
+        backgroundColor:"#f47a6a",
+        paddingVertical: 16,
+        borderRadius: 24,
+        alignItems: "center",
+        marginTop: 10,
+    },
+    submitText: {
+        color: "#fff",
+        fontSize: 18,
+        fontWeight: "900",
+    },
+    backText: {
+        textAlign: "center",
+        marginTop: 18,
+        color: "#355c9a",
+        fontWeight: "700",
+    },
+});
