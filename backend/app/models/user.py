@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime,ForeignKey,Enum,Boolean
+from sqlalchemy import Column, Integer, String, DateTime,ForeignKey,Enum, Boolean
+from sqlalchemy.orm import relationship
 from app.db.database import Base
 import datetime
 import enum
@@ -20,20 +21,23 @@ class User(Base):
     email = Column(String(100), unique=True, index=True)
     password_hash = Column(String(100), nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    parent = relationship("Parents", back_populates= "children")
 
 class Parents(Base):
     __tablename__ = "parents"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, nullable=False,index=True)
     email = Column(String(100), unique=True,nullable=False,index=True)
-    password_hash = Column(String(50),nullable=False)
+    password_hash = Column(String(100),nullable=False)
     created_at = Column(DateTime,default=datetime.datetime.utcnow)
+    children = relationship("User", back_populates = "parent")
 
 class Topic(Base):
     __tablename__ = "topic"
     id = Column(Integer,primary_key=True,index=True)
     name = Column(String(50),unique=True,nullable=False,index=True)
     grade_level = Column(Integer,nullable=False)
+    questions = relationship("Questions", back_populates="topic")
 
 class Questions(Base):
     __tablename__ = "questions"
@@ -43,6 +47,8 @@ class Questions(Base):
     question_type = Column(Enum(QuestionType),nullable=False)
     question_text = Column(String(250),nullable=False)
     correct_ans = Column(String(250), nullable=False)
+    topic= relationship("Topic", back_populates="questions")
+    choices = relationship("AnswerChoices", back_populates="question")
 
 class AnswerChoices(Base):
     __tablename__ = "answer_choices"
@@ -50,6 +56,7 @@ class AnswerChoices(Base):
     questions_id = Column(Integer, ForeignKey('questions.id'), nullable=False)
     choice_text = Column(String(250), nullable=False)
     is_correct = Column(Boolean, default=False)
+    question = relationship("Questions", back_populates="choices")
 
 class UserAnswer(Base):
     __tablename__ = "user_answers"
