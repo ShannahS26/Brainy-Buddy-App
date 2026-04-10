@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from fastapi.security import HTTPBearer
 from app.db.database import SessionLocal, engine, Base
 from fastapi.middleware.cors import CORSMiddleware
+from typing import List
 
 # Models
 from app.models.user import User, Parents
@@ -21,6 +22,17 @@ Base.metadata.create_all(bind=engine)
 # FastAPI app
 app = FastAPI()
 security = HTTPBearer()
+
+#-----------------------
+# Enable CORS
+#-----------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['http://localhost:3000'],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # DB dependency
@@ -68,7 +80,7 @@ def parent_register(parent: ParentCreate, db: Session = Depends(get_db)):
         (Parents.username == parent.username) | (Parents.email == parent.email)
     ).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Parent already exists")
+        raise HTTPException(status_code=400, detail="Username or email already exists")
 
     new_parent = Parents(
         username=parent.username,
@@ -106,24 +118,44 @@ def get_current_user(token=Security(security)):
         raise HTTPException(status_code=401, detail="Invalid token")
     return payload
 
+def get_current_parent(
+    db: Session = Depends(get_db),
+    current=Depends(get_current_user)
+):
+    if current["role"] != "parent":
+        raise HTTPException(status_code=403, detail="Only parents allowed")
+
+    parent = db.query(Parents).filter(
+        Parents.username == current["sub"]
+    ).first()
+
+    if not parent:
+        raise HTTPException(status_code=404, detail="Parent not found")
+
+    return parent
+
+@app.get("/dashboard")
+def dashboard(user:dict=Depends(get_current_user)):
+    return {
+        "message": f"Welcome {user['role']} {user['sub']}!",
+        "role": user["role"]
+    }
+
+@app.get("/parent/me")
+def get_parent(parent:Parents = Depends(get_current_parent)):
+    return parent
+
 @app.post("/parent/create-child", response_model=UserResponse)
 def create_child(
     user: UserCreate,
     db: Session = Depends(get_db),
-    current = Depends(get_current_user)
+    parent:Parents = Depends(get_current_parent)
 ):
-    if current["role"] != "parent":
-        raise HTTPException(status_code = 403, detail="Only parent can create child account")
     existing = db.query(User).filter(
-        (User.username == user.username)).first()
+        User.username == user.username).first()
 
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
-    
-    parent = db.query(Parents).filter(Parents.username == current["sub"]).first()
-
-    if not parent:
-        raise HTTPException(status_code=404, detail="Parent not found")
 
     new_user = User(
         username = user.username,
@@ -137,33 +169,10 @@ def create_child(
 
     return new_user
 
-
-@app.get("/dashboard")
-def dashboard(user=Depends(get_current_user)):
-    return {
-        "message": f"Welcome {user['role']} {user['sub']}!",
-        "role": user["role"]
-    }
-
 # ----------------------
 # View Point
 # ----------------------
-@app.get("/parent/children")
-def get_children(db:Session = Depends(get_db), current=Depends(get_current_user)):
-    if current ["role"] != "parent":
-        raise HTTPException(status_code=403, detail="Only parents allowed")
-    
-    parent = db.query(Parents).filter(Parents.username == current["sub"]).first()
-    
+@app.get("/parent/children",response_model=List[UserResponse])
+def get_children(parent:Parents=Depends(get_current_parent)):
     return parent.children
 
-#-----------------------
-# Enable CORS
-#-----------------------
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=['http://localhost:3000'],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
