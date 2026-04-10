@@ -5,10 +5,10 @@ import {View, Text, ScrollView, Image, ImageBackground, TouchableOpacity, StyleS
 const {width} = Dimensions.get("window");
 
 const levels = [
-    {id: 1, title: "One-to-one correspondence", x:50, y:1200, unlocked: true, color: "#67FEFF"},
-    {id: 2, title: "Subitizing", x: 50, y: 900, unlocked: true, color: "#67FEFF"},
-    {id: 3, title: "Cardinality", x: 235, y: 770, unlocked: false, color: "#FECB4F"},
-    {id: 4, title: "Shape Sorting", x: 20, y:650, unlocked: false, color: "#FECB4F"},
+    {id: 1, title: "One-to-one correspondence", x:50, y:1200, unlocked: true, color: '#5cbbcc'},
+    {id: 2, title: "Subitizing", x: 50, y: 900, unlocked: true, color: '#5cbbcc'},
+    {id: 3, title: "Cardinality", x: 235, y: 770, unlocked: false, color: "#e8b536"},
+    {id: 4, title: "Shape Sorting", x: 20, y:650, unlocked: false, color: "#e8b536"},
     {id: 5, title: "Comparing Amounts", x: 90, y: 400, unlocked: false, color: "#D9DDE5"},
 ];
 
@@ -148,31 +148,28 @@ export default function ActivityMap() {
 const styles = StyleSheet.create({
     container: {
         flex: 1, 
-        backgroundColor: "#Aeebff"
+        backgroundColor: "#5cbbcc",
     },
     topBar: {
         flexDirection: 'row',
         justifyContent: "space-around",
-        backgroundColor: "#FFF9F3",
+        backgroundColor: "#FFFFFF",
         marginHorizontal: 18,
         marginTop: 12, 
-        paddingVertical: 14,
-        borderRadius: 20,
+        paddingVertical: 12,
+        borderRadius: 25,
         shadowColor: "#000",
         shadowOpacity: 0.08,
-        shadowRadius: 6,
-        elevation: 4,
+        shadowRadius: 8,
+        elevation: 5,
     },
     stat: {
         fontSize: 18,
-        fontWeight: '700',
-        color: "#6e7280",
+        fontWeight: '800',
+        color: "#5cbbcc",
     },
     scrollContainer: {
         paddingBottom: 160,
-    },
-    mapWrapper: {
-        alignItems: 'center',
     },
     mapBackground: {
         width: width,
@@ -188,38 +185,38 @@ const styles = StyleSheet.create({
     /* Add pathOverlay here when found" */
     levelNode: {
         position: "absolute",
-        width: 82,
-        height: 82,
-        borderRadius: 41,
+        width: 86,
+        height: 86,
+        borderRadius: 43,
         alignItems: "center",
         justifyContent: "center",
-        borderWidth: 4,
+        borderWidth: 3,
         borderColor: "#ffffff",
         shadowColor: '#000',
         shadowOpacity: 0.12,
-        shadowRadius: 5, 
-        elevation: 5,
+        shadowRadius: 6, 
+        elevation: 6,
     }, 
     levelEmoji: {
-        fontSize: 24,
+        fontSize: 22,
     },
     levelText: {
         marginTop: 4,
-        fontSize: 12,
-        fontWeight: "700",
+        fontSize: 11,
+        fontWeight: "800",
         color: "#fff",
         textAlign: "center",
     },
     avatarContainer: {
         position: "absolute",
-        width: 46, 
-        height: 46, 
+        width: 48, 
+        height: 48, 
         zIndex: 25,
     },
     avatar: {
-        width: 46, 
-        height: 46,
-        borderRadius: 23,
+        width: 48, 
+        height: 48,
+        borderRadius: 24,
         borderWidth: 3, 
         borderColor: '#fff',
     },
@@ -227,19 +224,20 @@ const styles = StyleSheet.create({
         position: "absolute",
         bottom: 105,
         alignSelf: "center",
-        backgroundColor: "#F47A6A",
-        paddingHorizontal: 22,
-        paddingVertical: 12,
-        borderRadius: 24,
-        zIndex: 25,
+        backgroundColor: "#FFB800",
+        paddingHorizontal: 24,
+        paddingVertical: 14,
+        borderRadius: 30,
+        borderWidth: 2,
+        borderColor: "#000",
         shadowColor: "#000",
         shadowOpacity: 0.15,
         shadowRadius: 6,
         elevation: 6,
     },
     completeBtnText: {
-        color: "#fff",
-        fontWeight: "700",
+        color: "#000",
+        fontWeight: "900",
         fontSize: 16,
     },
     bottomOverlay: {
@@ -251,21 +249,17 @@ const styles = StyleSheet.create({
     },
 
     bottomNav: {
-        marginHorizontal: 28,
-        marginBottom: 18,
-        backgroundColor: "#FFFDF8",
+        marginHorizontal: 24,
+        marginBottom: 16,
+        backgroundColor: "#FFFFFF",
         borderRadius: 32,
         flexDirection: "row",
         justifyContent: "space-around",
-        paddingVertical: 16,
+        paddingVertical: 14,
         shadowColor: "#000",
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowOpacity: 0.12,
+        shadowRadius: 10,
         elevation: 8,
-    },
-    navIcon: {
-        fontSize: 24,
-        color: "#B8BCC7"
     },
     navImage: {
         width: 30,
@@ -274,14 +268,10 @@ const styles = StyleSheet.create({
     },
 
     navImageAvatar: {
-        width: 30, 
-        height: 30,
-        borderRadius: 23,
-        borderWidth: 3, 
-        borderColor: '#fff',
+        width: 32, 
+        height: 32,
+        borderRadius: 16,
+        borderWidth: 2, 
+        borderColor: '#5cbbcc',
     },
-
-    activeNav: {
-        color: "#57c7ff"
-    }
 });
