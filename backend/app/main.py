@@ -173,7 +173,7 @@ def create_child(
 # ----------------------
 # View Point
 # ----------------------
-@app.get("/parent/children", model=List[UserResponse])
+@app.get("/parent/children", response_model=List[UserResponse])
 def get_children(parent:Parents=Depends(get_current_parent)):
     return parent.children
 
@@ -217,7 +217,7 @@ def answer_question(
     if is_correct:
         progress.times_correct += 1
 
-    progress.last_attempted = datetime.datetime.utc()
+    progress.last_attempted = datetime.datetime.utcnow()
     db.commit()
 
     return {
@@ -234,7 +234,7 @@ def get_topic_progress(
     current=Depends(get_current_user)
 ):
     if current["role"] != "student":
-        HTTPException(status_code=403, detail="Not a child")
+        raise HTTPException(status_code=403, detail="Not a child")
 
     student = db.query(User).filter(
         User.username==current["sub"]
@@ -249,8 +249,9 @@ def get_topic_progress(
             "attempted": p.times_attempted,
             "correct": p.times_correct,
             "accuracy":(
-                p.time.correct / p.time_attempted * 100
-                if p.time_attempted > 0  else 0
+                p.times_correct / p.times_attempted * 100
+                if p.times_attempted > 0  else 0,
+                2
             )
         }
         for p in progress
