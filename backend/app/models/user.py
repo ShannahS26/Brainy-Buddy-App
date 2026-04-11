@@ -46,6 +46,14 @@ class Questions(Base):
     question_text = Column(String(250),nullable=False)
     correct_ans = Column(String(250), nullable=False)
 
+class UserProgress(Base):
+    __tablename__ = "user_progress"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    topic_id = Column(Integer, ForeignKey('topic.id'), nullable=False)
+    times_attempted = Column(Integer, default=0)
+    times_correct = Column(Integer, default=0)
+    last_attempted = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship("User")
     topic = relationship("Topic")

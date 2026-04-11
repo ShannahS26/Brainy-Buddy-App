@@ -1,5 +1,6 @@
 # app/main.py
 import datetime
+from typing import List
 from fastapi import FastAPI, Depends, HTTPException, Security
 from sqlalchemy.orm import Session
 from fastapi.security import HTTPBearer
@@ -118,24 +119,44 @@ def get_current_user(token=Security(security)):
         raise HTTPException(status_code=401, detail="Invalid token")
     return payload
 
+def get_current_parent(
+    db: Session = Depends(get_db),
+    current=Depends(get_current_user)
+):
+    if current["role"] != "parent":
+        raise HTTPException(status_code=403, detail="Only parents allowed")
+
+    parent = db.query(Parents).filter(
+        Parents.username == current["sub"]
+    ).first()
+
+    if not parent:
+        raise HTTPException(status_code=404, detail="Parent not found")
+
+    return parent
+
+@app.get("/dashboard")
+def dashboard(user:dict=Depends(get_current_user)):
+    return {
+        "message": f"Welcome {user['role']} {user['sub']}!",
+        "role": user["role"]
+    }
+
+@app.get("/parent/me")
+def get_parent(parent:Parents = Depends(get_current_parent)):
+    return parent
+
 @app.post("/parent/create-child", response_model=UserResponse)
 def create_child(
     user: UserCreate,
     db: Session = Depends(get_db),
-    current = Depends(get_current_user)
+    parent:Parents = Depends(get_current_parent)
 ):
-    if current["role"] != "parent":
-        raise HTTPException(status_code = 403, detail="Only parent can create child account")
     existing = db.query(User).filter(
-        (User.username == user.username)).first()
+        User.username == user.username).first()
 
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
-    
-    parent = db.query(Parents).filter(Parents.username == current["sub"]).first()
-
-    if not parent:
-        raise HTTPException(status_code=404, detail="Parent not found")
 
     new_user = User(
         username = user.username,
@@ -149,24 +170,11 @@ def create_child(
 
     return new_user
 
-
-@app.get("/dashboard")
-def dashboard(user=Depends(get_current_user)):
-    return {
-        "message": f"Welcome {user['role']} {user['sub']}!",
-        "role": user["role"]
-    }
-
 # ----------------------
 # View Point
 # ----------------------
-@app.get("/parent/children")
-def get_children(db:Session = Depends(get_db), current=Depends(get_current_user)):
-    if current ["role"] != "parent":
-        raise HTTPException(status_code=403, detail="Only parents allowed")
-    
-    parent = db.query(Parents).filter(Parents.username == current["sub"]).first()
-    
+@app.get("/parent/children", model=List[UserResponse])
+def get_children(parent:Parents=Depends(get_current_parent)):
     return parent.children
 
 #-----------------------
@@ -216,7 +224,6 @@ def answer_question(
         "correct": is_correct,
         "score": score,
     }
-
 
 #-----------------
 #Progress Tracking
