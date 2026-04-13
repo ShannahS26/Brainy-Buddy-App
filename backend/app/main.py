@@ -1,18 +1,22 @@
 # app/main.py
 import datetime
-from typing import List
+from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, Security
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from fastapi.security import HTTPBearer
-from app.db.database import SessionLocal, engine, Base
 from fastapi.middleware.cors import CORSMiddleware
 
 # Models
-from app.models.user import User, Parents,Topic, Questions,UserProgress
+from app.models.user import User, Parents,Topic, Questions, AnswerChoices, UserAnswer, UserProgress
 
 # Schemas
 from app.schemas.user_schema import UserCreate, UserResponse, UserLogin
 from app.schemas.parent_schema import ParentCreate, ParentLogin, ParentResponse
+from app.schemas.questions_schema import QuestionsSchema, TopicSchema, QuestionSubmitSchema
+
+
+from app.db.database import SessionLocal, engine, Base
+
 
 # Auth helpers
 from app.routes.auth import create_access_token, hash_password, verify_password, decode_access_token
@@ -27,13 +31,13 @@ security = HTTPBearer()
 # #-----------------------
 # # Enable CORS
 # #-----------------------
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=['http://localhost:3000'],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+ )
 
 
 # DB dependency
@@ -68,7 +72,8 @@ def student_login(user: UserLogin, db: Session = Depends(get_db)):
         "access_token": access_token,
         "token_type": "bearer",
         "role": "student",
-        "username": db_user.username
+        "username": db_user.username,
+        "id": db_user.id 
     }
 
 
@@ -114,7 +119,9 @@ def parent_login(parent: ParentLogin, db: Session = Depends(get_db)):
 # Protected Route
 # ----------------------
 def get_current_user(token=Security(security)):
+    print(f"🔑 Token received: {token.credentials[:20]}...") 
     payload = decode_access_token(token.credentials)
+    print(f"📝 Payload decoded: {payload}")
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid token")
     return payload
@@ -225,6 +232,32 @@ def answer_question(
         "score": score,
     }
 
+@app.get("/topics", response_model=List[TopicSchema])
+def get_topics(db: Session = Depends(get_db)):
+    return db.query(Topic).all()
+
+@app.get("/topics/{topic_id}/questions", response_model=List[QuestionsSchema])
+def get_questions_by_topic(
+    topic_id: int,
+    difficulty: Optional[str] = None,
+    limit: int = 10, 
+    db: Session = Depends(get_db),
+):
+    topic = db.query(Topic).filter(Topic.id == topic_id).first()
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+    
+    query = (
+        db.query(Questions)
+        .options(joinedload(Questions.choices))
+        .filter(Questions.topic_id == topic_id)
+    )
+
+    if difficulty:
+        query = query.filter(Questions.difficulty == difficulty)
+
+    return query.limit(limit).all()
+
 #-----------------
 #Progress Tracking
 #-----------------
@@ -236,23 +269,50 @@ def get_topic_progress(
     if current["role"] != "student":
         raise HTTPException(status_code=403, detail="Not a child")
 
-    student = db.query(User).filter(
-        User.username==current["sub"]
-    ).first()
-    progress = db.query(UserProgress).filter(
-        UserProgress.user_id == student.id
-    ).all()
+    student = db.query(User).filter(User.username == current["sub"]).first()
+    progress = db.query(UserProgress).filter(UserProgress.user_id == student.id).all()
 
     return [
         {
             "topic": p.topic.name,
             "attempted": p.times_attempted,
             "correct": p.times_correct,
-            "accuracy":(
+            "accuracy": round(
                 p.times_correct / p.times_attempted * 100
-                if p.times_attempted > 0  else 0,
-                2
+                if p.times_attempted > 0 else 0, 2
             )
         }
         for p in progress
     ]
+
+@app.post("/questions/submit")
+def submit_question(
+    payload: QuestionSubmitSchema,
+    db: Session = Depends(get_db),
+    #current_user = Depends(get_current_user)
+):
+    question = db.query(Questions).filter(Questions.id == payload.question_id).first()
+    if not question:
+        raise HTTPException(status_code=404, detail="Question not found")
+    
+    choice = db.query(AnswerChoices).filter(AnswerChoices.id == payload.answer_choice_id).first()
+    if not choice:
+        raise HTTPException(status_code=404, detail="Choice not found")
+    
+    is_correct = choice.is_correct == True
+
+    #user_id = db.query(User).filter(User.username == current_user["sub"]).first().id
+    user_submission = UserAnswer(
+        user_id = payload.user_id,
+        questions_id = payload.question_id,
+        is_correct = is_correct
+    )
+
+    db.add(user_submission)
+    db.commit()
+    db.refresh(user_submission)
+
+    return {
+        "message": "Answer Submitted!",
+        "is_correct":  is_correct
+    }

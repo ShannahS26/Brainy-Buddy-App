@@ -41,7 +41,7 @@ const ProfilePage = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView bounces={false}>
+      <ScrollView bounces={false} contentContainerStyle={styles.scrollContent} >
         {/* Header Section (The Orange Part) */}
         <View style={styles.header}>
           <Image
@@ -137,7 +137,7 @@ const ProfilePage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fffbf7", // Light cream background
+    backgroundColor: "#fdf7f2", // Light cream background
   },
   header: {
     backgroundColor: "#f5a623", // Orange background
@@ -262,6 +262,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: "#B8BCC7",
   },
+  scrollContent: {paddingBottom: 70,}, 
 });
 
 export default ProfilePage;

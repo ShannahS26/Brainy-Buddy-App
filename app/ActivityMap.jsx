@@ -5,11 +5,12 @@ import {View, Text, ScrollView, Image, ImageBackground, TouchableOpacity, StyleS
 const {width} = Dimensions.get("window");
 
 const levels = [
-    {id: 1, title: "One-to-one correspondence", x:50, y:1200, unlocked: true, color: '#5cbbcc'},
-    {id: 2, title: "Subitizing", x: 50, y: 900, unlocked: true, color: '#5cbbcc'},
-    {id: 3, title: "Cardinality", x: 235, y: 770, unlocked: false, color: "#e8b536"},
-    {id: 4, title: "Shape Sorting", x: 20, y:650, unlocked: false, color: "#e8b536"},
-    {id: 5, title: "Comparing Amounts", x: 90, y: 400, unlocked: false, color: "#D9DDE5"},
+    {id: 1, topicId: 1, title: "Counting", x:200, y: 950, color: '#5cbbcc'},
+    {id: 2, topicId: 2, title: "Number Recognition", x: 50, y: 900, color: '#5cbbcc'},
+    {id: 3, topicId: 3, title: "Basic Addition", x: 235, y: 770, color: "#e8b536"},
+    {id: 4, topicId: 4, title: "Basic Subtraction", x: 20, y:650, color: "#e8b536"},
+    {id: 5, topicId: 5, title: "Shapes", x: 90, y: 400, color: "#D9DDE5"},
+    {id: 6, topicId: 6, title: "Comparing numbers", x: 250, y: 150, color: "#D9DDE5"},
 ];
 
 export default function ActivityMap() {
@@ -64,19 +65,20 @@ export default function ActivityMap() {
                             <TouchableOpacity
                                 key={level.id}
                                 style={[styles.levelNode, {left: level.x, top: level.y, backgroundColor: level.color,
-                                    opacity: level.unlocked || level.id < currentLevel ? 1 : 0.7,
+                                    opacity: 1,
+                                    borderColor: level.id === currentLevel ? "#FFD700" : "#ffffff",
+                                    borderWidth: level.id === currentLevel ? 5 : 3,
                                 },
                             ]}
                             onPress={() => {
-                                if (level.id === 1) {
-                                    router.push("/Questions/questions");
-                                } else if (level.id === 2) {
-                                    router.push("/activities/subitizing");
-                                }
+                                router.push({
+                                    pathname: "/Questions/questions",
+                                    params: { topicId: level.id} // Don't forget to do this?
+                                });
                             }}
                             >
                                 <Text style={styles.levelEmoji}>
-                                    {level.id <= currentLevel ? "⭐" : "🔒"}
+                                    ⭐
                                 </Text>
                                 <Text style={styles.levelText}>{level.title}</Text>
                             </TouchableOpacity>
