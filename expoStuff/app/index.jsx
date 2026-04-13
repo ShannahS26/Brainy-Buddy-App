@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   StyleSheet,
@@ -10,9 +10,22 @@ import {
 //import { questionDb } from "../src/data/buddy_question";
 
 //import { bg1 } from "../expoStuff/assets/images/bg1.jpg";
+
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../lib/api";
 
 export default function QuestionsScreen() {
+
+  const [questions, setQuestions] = useState([]);
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const question = questions[questionIndex];
+
+
   //fetch all questions from the db
   useEffect(() => {
     fetchQuestions();
@@ -20,8 +33,15 @@ export default function QuestionsScreen() {
 
   const fetchQuestions = async () => {
     try{
+      const token = await AsyncStorage.getItem("token");
+
       const response = await fetch(
-        `${API_BASE_URL}/question/?/topic_id=1&difficulty=easy&limit=10` //fetching 10 questions that are easy
+        `${API_BASE_URL}/topics/1/questions?difficulty=easy`, //fetching 10 questions that are easy
+         {
+          headers: {
+            "Authorization": `Bearer ${token}` //sending the token 
+          }
+         }
       );
       const data = await response.json();
 
@@ -43,18 +63,9 @@ export default function QuestionsScreen() {
   };
 
 
-
-  //const [selected, setSelected] = useState(null);
-  //const [showFeedback, setShowFeedback] = useState(false);
-
-  //const question = mockQuestions[questionIndex]; //change to use actual db
-  //using database ahhh
-  //const dbQuestion = questionDb[questionIndex];
-  //const { width } = Dimensions.get("window");
-
   const handleSelect = async (choice) => {
     setSelected(choice);
-    setShowFeedback(true);
+    setShowFeedback(true); 
 
     const choiceObj = question.choiceObjects.find(
       (c) => c.choice_text === choice //find the idof the choice selected
@@ -66,6 +77,7 @@ export default function QuestionsScreen() {
           method: "POST",
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify({
+            user_id: 1,
             question_id: question.id,
             answer_choice_id: choiceObj.id,
           }),
@@ -126,7 +138,7 @@ export default function QuestionsScreen() {
         <View style={styles.topBar}>
           <ProgressBar
             style={styles.progressTracker}
-            percent={((questionIndex + 1) / mockQuestions.length) * 100}
+            percent={((questionIndex + 1) / questions.length) * 100}
           />
           <TouchableOpacity style={styles.homeBtn} onPress={handleHome}>
                 <Text style={{ fontSize: 20 }}>X</Text>

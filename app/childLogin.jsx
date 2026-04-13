@@ -1,12 +1,14 @@
-import React, {useState} from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage"; //adding for testing for questions
+import { router } from "expo-router";
+import { useState } from "react";
 import {
+    Alert,
     SafeAreaView,
-    View, 
+    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    StyleSheet,
-    Alert
+    View
 } from "react-native";
 import { API_BASE_URL } from "../lib/api";
 
@@ -30,6 +32,10 @@ export default function ChildLoginScreen() {
                 Alert.alert("Login Failed", data.detail || "Incorrect login");
                 return;
             }
+
+            //adding for testing for questions
+            await AsyncStorage.setItem("token", data.access_token);
+            await AsyncStorage.setItem("user_id", String(data.id)); 
 
             Alert.alert("Welcome!", `Hi ${data.username}!`);
             router.push("/ActivityMap");
