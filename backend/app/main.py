@@ -1,12 +1,13 @@
 # app/main.py
+import datetime
+from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, Security
 from sqlalchemy.orm import Session, joinedload
-from typing import List, Optional
 from fastapi.security import HTTPBearer
 from fastapi.middleware.cors import CORSMiddleware
 
 # Models
-from app.models.user import User, Parents,Topic, Questions, AnswerChoices, UserAnswer
+from app.models.user import User, Parents,Topic, Questions, AnswerChoices, UserAnswer, UserProgress
 
 # Schemas
 from app.schemas.user_schema import UserCreate, UserResponse, UserLogin
@@ -27,16 +28,16 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI()
 security = HTTPBearer()
 
-#-----------------------
-# Enable CORS
-#-----------------------
+# #-----------------------
+# # Enable CORS
+# #-----------------------
 app.add_middleware(
-   CORSMiddleware,
-   allow_origins=["*"],
-   allow_credentials=True,
-   allow_methods=["*"],
-   allow_headers=["*"],
-)
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+ )
 
 
 # DB dependency
@@ -71,7 +72,8 @@ def student_login(user: UserLogin, db: Session = Depends(get_db)):
         "access_token": access_token,
         "token_type": "bearer",
         "role": "student",
-        "username": db_user.username
+        "username": db_user.username,
+        "id": db_user.id 
     }
 
 
@@ -113,34 +115,55 @@ def parent_login(parent: ParentLogin, db: Session = Depends(get_db)):
     }
 
 
-
 # ----------------------
-# Protected Route Example
+# Protected Route
 # ----------------------
 def get_current_user(token=Security(security)):
+    print(f"🔑 Token received: {token.credentials[:20]}...") 
     payload = decode_access_token(token.credentials)
+    print(f"📝 Payload decoded: {payload}")
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid token")
     return payload
+
+def get_current_parent(
+    db: Session = Depends(get_db),
+    current=Depends(get_current_user)
+):
+    if current["role"] != "parent":
+        raise HTTPException(status_code=403, detail="Only parents allowed")
+
+    parent = db.query(Parents).filter(
+        Parents.username == current["sub"]
+    ).first()
+
+    if not parent:
+        raise HTTPException(status_code=404, detail="Parent not found")
+
+    return parent
+
+@app.get("/dashboard")
+def dashboard(user:dict=Depends(get_current_user)):
+    return {
+        "message": f"Welcome {user['role']} {user['sub']}!",
+        "role": user["role"]
+    }
+
+@app.get("/parent/me")
+def get_parent(parent:Parents = Depends(get_current_parent)):
+    return parent
 
 @app.post("/parent/create-child", response_model=UserResponse)
 def create_child(
     user: UserCreate,
     db: Session = Depends(get_db),
-    current = Depends(get_current_user)
+    parent:Parents = Depends(get_current_parent)
 ):
-    if current["role"] != "parent":
-        raise HTTPException(status_code = 403, detail="Only parent can create child account")
     existing = db.query(User).filter(
-        (User.username == user.username)).first()
+        User.username == user.username).first()
 
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
-    
-    parent = db.query(Parents).filter(Parents.username == current["sub"]).first()
-
-    if not parent:
-        raise HTTPException(status_code=404, detail="Parent not found")
 
     new_user = User(
         username = user.username,
@@ -154,50 +177,71 @@ def create_child(
 
     return new_user
 
-@app.post('/login')
-def login(user:UserLogin, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.username == user.username).first()
-    if not db_user or not verify_password(user.password, db_user.password_hash):
-        raise HTTPException(status_code=400, detail="Incorrect Password or Username")
-    access_token = create_access_token(data={"sub": db_user.username})
-    return {"access_token": access_token, "token_type": "bearer","user": db_user.username}
-
-
-@app.get("/dashboard")
-def dashboard(user=Depends(get_current_user)):
-    return {
-        "message": f"Welcome {user['role']} {user['sub']}!",
-        "role": user["role"]
-    }
-
 # ----------------------
 # View Point
 # ----------------------
-@app.get("/parent/children")
-def get_children(db:Session = Depends(get_db), current=Depends(get_current_user)):
-    if current ["role"] != "parent":
-        raise HTTPException(status_code=403, detail="Only parents allowed")
-    
-    parent = db.query(Parents).filter(Parents.username == current["sub"]).first()
-    
+@app.get("/parent/children", response_model=List[UserResponse])
+def get_children(parent:Parents=Depends(get_current_parent)):
     return parent.children
 
+#-----------------------
+# Question Answer
+#-----------------------
+@app.post("/questions/answer")
+def answer_question(
+    question_id: int,
+    answer: str,
+    db: Session = Depends(get_db),
+    current=Depends(get_current_user)
+):
+    if current["role"] != "student":
+        raise HTTPException(status_code=403, detail="Only student allowed")
+    
+    question = db.query(Questions).filter(Questions.id == question_id).first()
 
-# ----------------------
-# Question Routes
-# ----------------------
-#returns list of topics
+    if not question:
+        raise HTTPException(status_code=404, detail="Question not found")
+    
+    is_correct = question.correct_ans.lower() == answer.lower()
+    score = 10 if is_correct else 0
+
+    student = db.query(User).filter(User.username==current["sub"]).first()
+
+    progress = db.query(UserProgress).filter(
+        UserProgress.user_id == student.id,
+        UserProgress.topic_id == question.topic_id
+    ).first()
+
+    if not progress:
+        progress = UserProgress(
+            user_id = student.id,
+            topic_id = question.topic_id
+        )
+        db.add(progress)
+
+    progress.times_attempted += 1
+
+    if is_correct:
+        progress.times_correct += 1
+
+    progress.last_attempted = datetime.datetime.utcnow()
+    db.commit()
+
+    return {
+        "correct": is_correct,
+        "score": score,
+    }
+
 @app.get("/topics", response_model=List[TopicSchema])
 def get_topics(db: Session = Depends(get_db)):
     return db.query(Topic).all()
 
-#requires auth and returns questions along with their answer choices
 @app.get("/topics/{topic_id}/questions", response_model=List[QuestionsSchema])
 def get_questions_by_topic(
     topic_id: int,
     difficulty: Optional[str] = None,
+    limit: int = 10, 
     db: Session = Depends(get_db),
-    current = Depends(get_current_user)
 ):
     topic = db.query(Topic).filter(Topic.id == topic_id).first()
     if not topic:
@@ -212,29 +256,40 @@ def get_questions_by_topic(
     if difficulty:
         query = query.filter(Questions.difficulty == difficulty)
 
-    return query.all()
-#same as topic but grabs questions based on the grade level.
-@app.get("/questions/grade/{grade_level}", response_model=List[QuestionsSchema])
-def get_questions_by_grade(
-    grade_level: int,
-    db: Session = Depends(get_db),
-    current = Depends(get_current_user)
-):
-    topics = db.query(Topic).filter(Topic.grade_level == grade_level).all()
-    topic_ids = [t.id for t in topics]
+    return query.limit(limit).all()
 
-    return (
-        db.query(Questions)
-        .options(joinedload(Questions.choices))
-        .filter(Questions.topic_id.in_(topic_ids))
-        .all()
-    )
+#-----------------
+#Progress Tracking
+#-----------------
+@app.get("/student/progress/topics")
+def get_topic_progress(
+    db: Session = Depends(get_db),
+    current=Depends(get_current_user)
+):
+    if current["role"] != "student":
+        raise HTTPException(status_code=403, detail="Not a child")
+
+    student = db.query(User).filter(User.username == current["sub"]).first()
+    progress = db.query(UserProgress).filter(UserProgress.user_id == student.id).all()
+
+    return [
+        {
+            "topic": p.topic.name,
+            "attempted": p.times_attempted,
+            "correct": p.times_correct,
+            "accuracy": round(
+                p.times_correct / p.times_attempted * 100
+                if p.times_attempted > 0 else 0, 2
+            )
+        }
+        for p in progress
+    ]
 
 @app.post("/questions/submit")
 def submit_question(
     payload: QuestionSubmitSchema,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    #current_user = Depends(get_current_user)
 ):
     question = db.query(Questions).filter(Questions.id == payload.question_id).first()
     if not question:
@@ -246,9 +301,9 @@ def submit_question(
     
     is_correct = choice.is_correct == True
 
-    user_id = db.query(User).filter(User.username == current_user["sub"]).first().id
+    #user_id = db.query(User).filter(User.username == current_user["sub"]).first().id
     user_submission = UserAnswer(
-        user_id = user_id,
+        user_id = payload.user_id,
         questions_id = payload.question_id,
         is_correct = is_correct
     )
@@ -262,14 +317,4 @@ def submit_question(
         "is_correct":  is_correct
     }
 
-    
-#-----------------------
-# Enable CORS
-#-----------------------
-#@app.add_middleware(
-   # CORSMiddleware,
-   # allow_origins=['http://localhost:3000'],
-   # allow_credentials=True,
-   # allow_methods=["*"],
-   # allow_headers=["*"],
-#)
+

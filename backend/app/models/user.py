@@ -75,7 +75,3 @@ class UserProgress(Base):
     times_correct = Column(Integer, default=0)
     last_attempted = Column(DateTime, default=datetime.datetime.utcnow)
     
-
-
-
-    

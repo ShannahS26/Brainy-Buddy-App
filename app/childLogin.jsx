@@ -8,7 +8,6 @@ import {
     StyleSheet,
     Alert
 } from "react-native";
-import { router } from "expo-router";
 import { API_BASE_URL } from "../lib/api";
 
 export default function ChildLoginScreen() {
@@ -17,7 +16,7 @@ export default function ChildLoginScreen() {
 
     const handleChildAuth = async () => {
         try {
-            const response = await fetch(`http://127.0.0.1:8000/student/login`, {
+            const response = await fetch(`${API_BASE_URL}/student/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -49,7 +48,7 @@ export default function ChildLoginScreen() {
                 {/* Inputs */}
                 <TextInput
                     style={styles.input}
-                    placeholder="username"
+                    placeholder="Name"
                     placeholderTextColor="#7a7a7a"
                     value={username}
                     onChangeText={setUsername}
