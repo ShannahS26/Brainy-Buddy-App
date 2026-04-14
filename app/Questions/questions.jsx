@@ -27,6 +27,15 @@ export default function QuestionsScreen() {
   const [difficulty, setDifficulty] = useState("easy");
   const scoreRef = useRef(0);
 
+  const backgrounds = [
+    require("../assets/imgs/bg1.jpg"),
+    require("../assets/imgs/bg2.jpg"),
+  ];
+
+  const [randomBg, setRandomBg] = useState(
+    backgrounds[Math.floor(Math.random() * backgrounds.length)],
+  );
+
   const question = questions[questionIndex];
 
 
@@ -141,6 +150,12 @@ export default function QuestionsScreen() {
     router.back(); //goes back to the activity map
 };
 
+  const tryAgainFunc = () => {
+    setSelected(null);
+    setShowFeedback(false);
+    setQuestionIndex(questionIndex);
+  };
+
   const isCorrect = question ? selected === question.correct_answer : false;
   const isWrong = showFeedback && !isCorrect;
   const isRight = showFeedback && isCorrect;
@@ -194,6 +209,7 @@ export default function QuestionsScreen() {
   };
 
   return (
+    <ImageBackground source={randomBg} style={styles.screenBackground}>
     <View style={styles.container}>
       {question && (
         <>
@@ -205,17 +221,11 @@ export default function QuestionsScreen() {
           <TouchableOpacity style={styles.homeBtn} onPress={handleHome}>
                 <Text style={{ fontSize: 20 }}>X</Text>
           </TouchableOpacity>
-          
         </View>
-        <Text style={styles.question}>{question.question}</Text>
-          {/*background
-          <ImageBackground
-            source={ bg1}
-            style={styles.mapBackground}
-            resizeMode="cover"
-          />*/}
-
-          {/*//shows the choices displays correct answer regardless -> todo#2*/}
+        <View style={styles.question}>
+          <Text style={styles.questionText}>{question.question}</Text>
+        </View>
+         
           <View style={styles.choicesGrid}>
             {question.choices.map((choice, i) => {
             const isSelected = selected === choice;
@@ -247,99 +257,90 @@ export default function QuestionsScreen() {
           {showFeedback && (
   <View
     style={[
-      styles.feedback,
-      isRight && styles.correctFeedback,
-      isWrong && styles.incorrectFeedback,
+      isRight && styles.feedbackCorrect,
+      isWrong && styles.feedbackIncorrect,
     ]}
   >
     {isRight && (
-      <Text style={styles.feedbackText}>Excellent!</Text>
+      <View>
+         <Text style={styles.feedbackTextCorrect}>Excellent!</Text>
+         <TouchableOpacity
+            style={styles.nextBtnCorrect}
+            onPress={handleNext}
+         >
+         <Text style={styles.nextText}>Next Question</Text>
+         </TouchableOpacity>
+         
+          <Text style={styles.feedbackText}>Excellent!</Text>
+        </View>
+
     )}
 
     {isWrong && (
-      <Text style={{fontSize: 16, color: "#B00020", textAlign: "center"}}>
-        Correct answer: {question.correct_answer}
-      </Text>
+       <View>
+           <TouchableOpacity
+              style={styles.nextBtnIncorrect}
+              onPress={tryAgainFunc}
+            >
+              <Text style={styles.nextText}>Try again!</Text>
+            </TouchableOpacity>
+        </View>
     )}
-
-    <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
-      <Text style={styles.nextText}>Next Question</Text>
-    </TouchableOpacity>
-  </View>
+    </View>
 )}
         </>
       )}
     </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FBF6F2", //doesnt matter - should be a picture
+    //backgroundColor: "#FBF6F2", //doesnt matter - should be a picture
     paddingHorizontal: 20,
     paddingTop: 50,
   },
 
   question: { //deisgn for the box the question
-    // flex: 2,
-    // backgroundColor: "#FBF6F2",
-    // borderRadius: 28,
-    // padding: 28,
-    // alignItems: "center",
-    // borderWidth: 2,
-    // borderColor: "#f9e1ce",
-    // elevation: 6,
-    // height: 80,
-    // justifyContent: "center",
-    // gap: 12,
-    // fontSize: 20,
-    // textAlign: "center",
-    // marginTop: 40,
-    fontSize: 20,
+    elevation: 6,
+    height: 150,
+    gap: 10,
+    marginTop: 80,
     fontWeight: "600",
     textAlign: "center",
     marginVertical: 20,
-  },
-
-  /*choice: {
-    flex: 3,
-    backgroundColor: "#FBF6F2",
+    backgroundColor: "#FFF9F3",
     borderRadius: 18,
-    borderWidth: 2.5,
     borderColor: "#f9e1ce",
-    alignItems: "center",
-    justifyContent: "center",
-    height: 20,
-    shadowColor: "#8B7ECC",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    borderWidth: 2.5,
   },
 
-  choiceText: {
-    fontSize: 24,
+  questionText: {
+    color: "#4f2300",
+    fontSize: 30,
+    fontWeight: "500",
     textAlign: "center",
-  },*/
+    paddingTop: 40,
+  },
 
   choicesGrid: {
-  flexDirection: "row",
-  flexWrap: "wrap",
-  justifyContent: "space-between",
-  gap: 12,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 12,
 },
 
 choice: {
   width: "48%",
   height: 120,
-  backgroundColor: "#FFF",
-  borderRadius: 16,
-  borderWidth: 2,
-  borderColor: "#E5E5E5",
+  backgroundColor: "#fdf6f1",
+  borderRadius: 18,
+  borderWidth: 2.5,
+  borderColor: "#f9e1ce",
   justifyContent: "center",
   alignItems: "center",
-
   shadowColor: "#000",
   shadowOpacity: 0.05,
   shadowRadius: 5,
@@ -348,15 +349,11 @@ choice: {
 },
 
 choiceText: {
-  fontSize: 18,
+  fontSize: 20,
   fontWeight: "500",
 },
 
-  feedback: {
-    // flex: 4,
-    // alignItems: "center",
-    // justifyContent: "center",
-    // gap: 20,
+feedbackCorrect: {
     position: "absolute",
     bottom: 0,
     left: 0,
@@ -365,6 +362,33 @@ choiceText: {
     padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    height: 150,
+  },
+
+  feedbackTextCorrect: {
+    fontSize: 24,
+    fontWeight: "600",
+    textAlign: "center",
+    marginBottom: 20,
+    color: "#58CC02",
+  },
+
+  feedbackIncorrect: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#FDC4C4",
+    padding: 20,
+    height: 150,
+  },
+
+  feedbackTextIncorrect: {
+    fontSize: 24,
+    fontWeight: "600",
+    textAlign: "center",
+    marginBottom: 20,
+    color: "#D13A3A",
   },
   
   correctChoice: {
@@ -388,33 +412,21 @@ choiceText: {
   },
 
   incorrect: {
-    //design for the bottom thing saying the right answer
-    //marginTop: 20,
-    // flex: 3,
-    // fontSize: 22,
-    // textAlign: "center",
-    // color: "#A72D2D",
-    // opacity: 0.5,
-    // borderRadius: 8,
-    // width: "100%",
-    // backgroundColor: "#FDC4C4",
-    //height: "100%",
     fontSize: 16,
     color: "#B00020",
     textAlign: "center",
     marginBottom: 10,
   },
 
-  nextBtn: {
-    // marginTop: 50,
-    // backgroundColor: "#5AF0F1",
-    // padding: 12,
-    // borderRadius: 8,
-    // //flex: 2,
-    // justifyContent: "flex-end",
-    // opacity: 1.0,
-    // alignSelf: "flex-end",
+  nextBtnCorrect: {
     backgroundColor: "#58CC02",
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+
+  nextBtnIncorrect: {
+    marginTop: 30,
+    backgroundColor: "#D13A3A",
     paddingVertical: 14,
     borderRadius: 12,
   },
@@ -426,7 +438,7 @@ choiceText: {
   },
 
   homeBtn: {
-    width:36,
+    width: 36,
     paddingHorizontal: 10, 
     paddingVertical: 5,
     borderRadius: 8,
@@ -449,11 +461,22 @@ choiceText: {
     height: "100%",
     backgroundColor: "#FFD166",
     borderRadius: 5,
+    borderColor: "#e7c7ad",
+    borderWidth: 1,
   },
 
   topBar: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+  },
+
+  screenBackground: {
+    height: Dimensions.get("window").height,
+    width: Dimensions.get("window").width,
+    flex: 1,
+    resizeMode: "cover",
+    justifyContent: "center",
+    blurRadius: 100,
   },
 });
