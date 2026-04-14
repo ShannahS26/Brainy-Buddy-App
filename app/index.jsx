@@ -36,10 +36,16 @@ export default function WelcomeScreen() {
           >
             <Text style={styles.buttonText}>I'm a Student</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+           style={[styles.button, styles.childBtn]}
+           onPress={() => router.push("/tabs/achievements")}
+          ></TouchableOpacity>
+
         </View>
 
         <Text style={styles.footerText}> Learning starts here</Text>
-
+        
       </View>
     </SafeAreaView>
   );
