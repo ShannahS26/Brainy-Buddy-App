@@ -1,6 +1,8 @@
-import React, {useEffect, useRef, useState} from "react";
-import {router} from 'expo-router';
+import React, {useEffect, useRef, useState, useCallback} from "react";
+import {router, useFocusEffect} from 'expo-router';
 import {View, Text, ScrollView, Image, ImageBackground, TouchableOpacity, StyleSheet, Animated, Dimensions, SafeAreaView} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE_URL } from "../lib/api";
 
 const {width} = Dimensions.get("window");
 
@@ -21,6 +23,72 @@ export default function ActivityMap() {
 
     const avatarX = useRef(new Animated.Value(currentNode.x + 15)).current;
     const avatarY = useRef(new Animated.Value(currentNode.y - 50)).current;
+
+    const [progress, setProgress] = useState([]);
+
+    const [stats, setStats] = useState({
+        Attempted: 0,
+        Correct: 0,
+        points: 0,
+    })
+
+    const fetchProgress = async () => {
+        try {
+            const token = await AsyncStorage.getItem("token");
+
+            const res = await fetch(`${API_BASE_URL}/student/progress/topics`, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                console.log(data);
+                return;
+            }
+
+            setProgress(data);
+        } catch (err){
+            console.log(err);
+        }
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchProgress();
+        }, [])
+    );
+
+    const getProgressByTopic = (topicName) => {
+        return progress.find(p => p.topic === topicName);
+    }
+
+    // Helper function for resuming question per topic
+    const getResumeIndex = (topicId) => {
+        const topic = levels.find(l => l.id === topicId);
+        const p = progress.find(p => p.topic === topic?.title);
+
+        if (!p) return 0;
+        return p.Attempted || 0;
+    }
+
+    const getStartingLevel = (progressData) => {
+        if (!progressData || progressData.length === 0) return 1;
+
+        // Find the most recently attempted topic
+        const mostRecent = progressData.reduce((max, item) => {
+            return item.Attempted > (max?.Attempted || 0) ? item : max;
+        }, null);
+
+        if (!mostRecent) return 1;
+
+        const level = levels.find(l => l.title === mostRecent.topic);
+
+        return level ? level.id : 1;
+    }
 
     useEffect(() => {
         const newNode = levels.find((lvl) => lvl.id === currentLevel);
@@ -45,6 +113,26 @@ export default function ActivityMap() {
         }
     }, [currentLevel]);
 
+    useEffect(() => {
+        if (progress.length > 0) {
+
+            // Calculate the stats
+            let totalAttempted = 0;
+            let totalCorrect = 0;
+
+            progress.forEach(p => {
+                totalAttempted += p.Attempted;
+                totalCorrect += p.Correct;
+            });
+
+            setStats({
+                Attempted: totalAttempted,
+                Correct: totalCorrect,
+                points: totalCorrect * 10,
+            });
+        }
+    }, [progress]);
+
     const completeLevel = () => {
         if (currentLevel < levels.length) {
             setCurrentLevel(currentLevel + 1);
@@ -61,28 +149,43 @@ export default function ActivityMap() {
                         resizeMode="cover"
                     >
                         {/* Level nodes */}
-                        {levels.map((level) => (
-                            <TouchableOpacity
-                                key={level.id}
-                                style={[styles.levelNode, {left: level.x, top: level.y, backgroundColor: level.color,
-                                    opacity: 1,
-                                    borderColor: level.id === currentLevel ? "#FFD700" : "#ffffff",
-                                    borderWidth: level.id === currentLevel ? 5 : 3,
-                                },
-                            ]}
-                            onPress={() => {
-                                router.push({
-                                    pathname: "/Questions/questions",
-                                    params: { topicId: level.id} // Don't forget to do this?
-                                });
-                            }}
-                            >
-                                <Text style={styles.levelEmoji}>
-                                    ⭐
-                                </Text>
-                                <Text style={styles.levelText}>{level.title}</Text>
-                            </TouchableOpacity>
-                        ))}
+                        {levels.map((level) => {
+
+                            const levelProgress = progress.find(
+                                p => p.topic === level.title
+                            );
+                            return (
+                                <TouchableOpacity
+                                    key={level.id}
+                                    style={[styles.levelNode, {left: level.x, top: level.y, backgroundColor: level.color,
+                                        opacity: 1,
+                                        borderColor: level.id === currentLevel ? "#FFD700" : "#ffffff",
+                                        borderWidth: level.id === currentLevel ? 5 : 3,
+                                    },
+                                ]}
+                                onPress={() => {
+                                    router.push({
+                                        pathname: "/Questions/questions",
+                                        params: { 
+                                            topicId: level.id,
+                                            resumeIndex: getResumeIndex(level.id)
+                                        }
+                                    });
+                                }}
+                                >
+                                    <Text style={styles.levelEmoji}>
+                                        ⭐
+                                    </Text>
+                                    <Text style={styles.levelText}>{level.title}</Text>
+
+                                    {levelProgress && (
+                                        <Text style={{ fontSize: 10, color: "#fff", fontWeight: "bold" }}>
+                                            {levelProgress.Accuracy}%
+                                        </Text>
+                                    )}
+                                </TouchableOpacity>
+                            );
+                        })}
 
                         {/* Avatar Marker */}
                         <Animated.View
@@ -101,9 +204,9 @@ export default function ActivityMap() {
             <SafeAreaView pointerEvents='box-none' style={styles.topOverlay}>
                 <View style={styles.topBar}>
                     {/* I need to change these to icons, later */}
-                    <Text style={styles.stat}>⚙️ 6</Text>
-                    <Text style={styles.stat}>🔥 20</Text>
-                    <Text style={styles.stat}>💎 800</Text>
+                    <Text style={styles.stat}>⚙️ {stats.Attempted}</Text>
+                    <Text style={styles.stat}>🔥 {stats.Correct}</Text>
+                    <Text style={styles.stat}>💎 {stats.points}</Text>
                     <Text style={styles.stat}>❤️ 4</Text>
                 </View>
             </SafeAreaView>

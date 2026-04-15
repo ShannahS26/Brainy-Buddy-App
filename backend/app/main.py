@@ -1,5 +1,5 @@
 # app/main.py
-import datetime
+from datetime import datetime
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, Security
 from sqlalchemy.orm import Session, joinedload
@@ -7,8 +7,7 @@ from fastapi.security import HTTPBearer
 from fastapi.middleware.cors import CORSMiddleware
 
 # Models
-from app.models.user import User, Parents,Topic, Questions, AnswerChoices, UserAnswer, UserProgress
-
+from app.models.user import User, Parents,Topic, Questions,UserProgress, DifficultyLevel, AnswerChoices,UserAnswer, QuestionAttempt
 # Schemas
 from app.schemas.user_schema import UserCreate, UserResponse, UserLogin
 from app.schemas.parent_schema import ParentCreate, ParentLogin, ParentResponse
@@ -184,6 +183,41 @@ def create_child(
 def get_children(parent:Parents=Depends(get_current_parent)):
     return parent.children
 
+
+@app.get("/parent/child/{child_id}/progress")
+def get_child_progress(
+    child_id: int,
+    db: Session = Depends(get_db),
+    parent=Depends(get_current_parent)
+):
+    child = db.query(User).filter(
+        User.id == child_id,
+        User.parent_id == parent.id
+    ).first()
+
+    if not child:
+        raise HTTPException(status_code=404, detail="Child not found")
+    
+    progress = db.query(UserProgress).filter(
+        UserProgress.user_id == child.id
+    ).all()
+
+    return [
+        {
+            "topic": p.topic.name, 
+            "Attempted": p.times_attempted,
+            "Correct": p.times_correct,
+            "Accuracy": round(
+                (p.times_correct / p.times_attempted * 100)
+                if p.times_attempted > 0 else 0,
+                2
+            ),
+            "Difficulty": p.difficulty_level,
+            "Streak": p.current_streak
+        }
+        for p in progress
+    ]
+
 #-----------------------
 # Question Answer
 #-----------------------
@@ -219,17 +253,45 @@ def answer_question(
         )
         db.add(progress)
 
+    if not progress.difficulty_level:
+        progress.difficulty_level = DifficultyLevel.easy
+
+
     progress.times_attempted += 1
 
     if is_correct:
         progress.times_correct += 1
+        progress.current_streak += 1
+        progress.wrong_streak = 0
+    else:
+        progress.wrong_streak += 1
+        progress.current_streak = 0
 
-    progress.last_attempted = datetime.datetime.utcnow()
+    # Increase difficulty
+    if progress.current_streak >= 5:
+        if progress.difficulty_level == DifficultyLevel.easy:
+            progress.difficulty_level = DifficultyLevel.medium
+        elif progress.difficulty_level == DifficultyLevel.medium:
+            progress.difficulty_level = DifficultyLevel.hard
+        progress.current_streak = 0
+
+# Decrease difficulty
+    if progress.wrong_streak >= 2:
+        if progress.difficulty_level == DifficultyLevel.hard:
+            progress.difficulty_level = DifficultyLevel.medium
+        elif progress.difficulty_level == DifficultyLevel.medium:
+            progress.difficulty_level = DifficultyLevel.easy
+        progress.wrong_streak = 0
+
+
+    progress.last_attempted = datetime.utcnow() #changed..took out double datetime
     db.commit()
 
     return {
-        "correct": is_correct,
-        "score": score,
+        "Correct": is_correct,
+        "Score": score,
+        "Streak": progress.current_streak,
+        "Difficulty": progress.difficulty_level
     }
 
 @app.get("/topics", response_model=List[TopicSchema])
@@ -275,12 +337,15 @@ def get_topic_progress(
     return [
         {
             "topic": p.topic.name,
-            "attempted": p.times_attempted,
-            "correct": p.times_correct,
-            "accuracy": round(
-                p.times_correct / p.times_attempted * 100
-                if p.times_attempted > 0 else 0, 2
-            )
+            "Attempted": p.times_attempted,
+            "Correct": p.times_correct,
+            "Accuracy": round(
+            (p.times_correct / p.times_attempted * 100)
+            if p.times_attempted > 0 else 0,
+            2
+            ),
+            "Difficulty": p.difficulty_level,
+            "Streak": p.current_streak
         }
         for p in progress
     ]
@@ -300,6 +365,7 @@ def submit_question(
         raise HTTPException(status_code=404, detail="Choice not found")
     
     is_correct = choice.is_correct == True
+    difficulty = question.difficulty
 
     #user_id = db.query(User).filter(User.username == current_user["sub"]).first().id
     user_submission = UserAnswer(
@@ -309,10 +375,45 @@ def submit_question(
     )
 
     db.add(user_submission)
+
+    attempt = QuestionAttempt(
+        user_id=payload.user_id,
+        question_id=question.id,
+        topic_id=question.topic_id,
+        is_correct=is_correct,
+        difficulty=difficulty
+    )
+    db.add(attempt)
     db.commit()
     db.refresh(user_submission)
 
     return {
         "message": "Answer Submitted!",
         "is_correct":  is_correct
+    }
+
+@app.get("/parent/child/{child_id}/summary")
+def get_child_summary(child_id: int, db: Session = Depends(get_db), parent=Depends(get_current_parent)):
+    child = db.query(User).filter(
+        User.id == child_id,
+        User.parent_id == parent.id
+    ).first()
+
+    if not child:
+        raise HTTPException(status_code=404, detail="Child not found")
+    
+    progress = db.query(UserProgress).filter(UserProgress.user_id == child.id).all()
+
+    total_attempts = sum(p.times_attempted for p in progress)
+    total_correct = sum(p.times_correct for p in progress)
+
+    accuracy = round((total_correct / total_attempts * 100) if total_attempts > 0 else 0, 2)
+
+    return {
+        "child_id": child.id, 
+        "username": child.username,
+        "total_attempts": total_attempts,
+        "accuracy": accuracy,
+        "topics_tracked": len(progress),
+        "last_active": max([p.last_attempted for p in progress]) if progress else None
     }

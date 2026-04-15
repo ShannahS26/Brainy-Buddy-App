@@ -6,6 +6,28 @@ import { router } from "expo-router";
 
 export default function ParentDashboard(){
     const [children, setChildren] = useState([]);
+    const [summaries, setSummaries] = useState({});
+
+    const fetchSummaries = async (childrenList) => {
+        try {
+            const token = await AsyncStorage.getItem("token");
+            const results = await Promise.all(
+                childrenList.map(async (child) => {
+                    const res = await fetch(`${API_BASE_URL}/parent/child/$child.id/summary`,
+                        {
+                            headers: {Authorization: `Bearer ${token}`},
+                        }
+                    );
+                    const data = await res.json();
+                })
+            );
+
+            const mapped = Object.fromEntries(results);
+            setSummaries(mapped);
+        } catch (err) {
+            console.log(err);
+        }
+    };
 
     const fetchChildren = async () => {
         try {
@@ -26,6 +48,7 @@ export default function ParentDashboard(){
             }
 
             setChildren(data);
+            fetchSummaries(data);
         } catch (error) {
             console.log(error);
         }
@@ -54,16 +77,34 @@ export default function ParentDashboard(){
                     data={children}
                     keyExtractor={(item) => item.id.toString()}
                     contentContainerStyle={{ paddingBottom: 20}}
-                    renderItem={({ item }) => (
-                        <View style={styles.childCard}>
-                            <Text style={styles.name}>{item.username}</Text>
-                            <Text style={styles.email}>{item.email}</Text>
+                    renderItem={({ item }) => {
+                        const summary = summaries[item.id];
 
-                            <View style={styles.progressBadge}>
-                                <Text style={styles.progressText}>Progress: New</Text>
-                            </View>
-                        </View>
-                    )}
+                        return (
+                            <TouchableOpacity
+                                onPress={() => 
+                                    router.push({
+                                        pathname: "/childProgress",
+                                        params: { childId: item.id},
+                                    })
+                                }
+                            >
+                                <View style={styles.childCard}>
+                                    <Text styles={styles.name}>{item.username}</Text>
+                                    <Text styles={styles.email}>{item.email}</Text>
+
+                                    <View style={styles.progressBadge}>
+                                        <Text style={styles.progressText}>
+                                            Accuracy: {summary?.accuracy ?? 0}%
+                                        </Text>
+                                    </View>
+                                    <Text style={styles.attempts}>
+                                        Attempts: {summary?.total_attempts ?? 0}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    }}
                 />
             </View>
         </SafeAreaView>
@@ -140,6 +181,11 @@ const styles = StyleSheet.create({
     progressText: {
         fontWeight: "700", 
         color: "#355c9a",
+    },
+
+    attempts: {
+        marginTop: 6, 
+        color: "#777",
     },
 
     backButton: {

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime,ForeignKey,Enum, Boolean
+from sqlalchemy import Column, Integer, String, DateTime,ForeignKey,Enum, Boolean, UniqueConstraint, func
 from sqlalchemy.orm import relationship
 from app.db.database import Base
 import datetime
@@ -21,6 +21,7 @@ class User(Base):
     password_hash = Column(String(100), nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     parent = relationship("Parents", back_populates= "children")
+    progress =  relationship("UserProgress", back_populates = "user", cascade = "all, delete")
 
 class Parents(Base):
     __tablename__ = "parents"
@@ -29,7 +30,7 @@ class Parents(Base):
     email = Column(String(100), unique=True,nullable=False,index=True)
     password_hash = Column(String(100),nullable=False)
     created_at = Column(DateTime,default=datetime.datetime.utcnow)
-    children = relationship("User", back_populates = "parent")
+    children = relationship("User", back_populates = "parent", cascade = "all, delete")
 
 class Topic(Base):
     __tablename__ = "topic"
@@ -69,8 +70,42 @@ class UserAnswer(Base):
 class UserProgress(Base):
     __tablename__ = "user_progress"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    topic_id = Column(Integer, ForeignKey('topic.id'), nullable=False)
+    
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    topic_id = Column(Integer, ForeignKey("topic.id"), nullable=False, index=True)
+    
     times_attempted = Column(Integer, default=0)
     times_correct = Column(Integer, default=0)
-    last_attempted = Column(DateTime, default=datetime.datetime.utcnow)
+
+    current_streak = Column(Integer, default=0)
+    wrong_streak = Column(Integer, default=0)
+
+    difficulty_level = Column(
+        Enum(DifficultyLevel, name="difficulty_level"),
+        default=DifficultyLevel.easy
+    )
+
+    last_attempted = Column(
+        DateTime,
+        default=func.now(),
+        onupdate=func.now()
+    )
+
+    # Relationships (consistent style)
+    user = relationship("User", back_populates="progress")
+    topic = relationship("Topic")
+    __table_args__ = (
+        UniqueConstraint("user_id", "topic_id", name="unique_user_topic"),
+)
+    
+class QuestionAttempt(Base):
+    __tablename__ = "question_attempts"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    question_id = Column(Integer, ForeignKey("questions.id"))
+    topic_id = Column(Integer, ForeignKey("topic.id"))
+
+    is_correct = Column(Boolean)
+    difficulty = Column(Enum(DifficultyLevel))
+    answered_at = Column(DateTime, default=datetime.datetime.utcnow)
