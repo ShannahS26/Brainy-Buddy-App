@@ -60,17 +60,12 @@ export default function QuestionsScreen() {
       }
     );
 
-    //console.log("=== FETCH QUESTIONS RESPONSE STATUS:", response.status);
     
     const data = await response.json();
     
-    //console.log("=== RAW DATA TYPE:", typeof data, Array.isArray(data));
-    //console.log("=== RAW DATA:", JSON.stringify(data, null, 2));
 
     const questions = Array.isArray(data) ? data : data.questions ?? data.items ?? data.data ?? [];
     
-    //console.log("=== FIRST QUESTION KEYS:", questions[0] ? Object.keys(questions[0]) : "empty");
-    //console.log("=== FIRST QUESTION:", JSON.stringify(questions[0], null, 2));
 
     const formatted = questions.map((q) => ({
       id: q.id,

@@ -1,86 +1,80 @@
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   FlatList,
   Image,
-  SafeAreaView,
-  StyleSheet,
-  Text,
+  SafeAreaView, StyleSheet, Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+import { API_BASE_URL } from "../../lib/api";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 60) / 2;
 
-const GAMIFIED_ACHIEVEMENTS = [
-  {
-    id: "1",
-    title: "Novice Reward",
-    level: "Beginner",
-    unlocked: true,
-    image: require("../../assets/images/badges/badge1.png"),
-  },
-  {
-    id: "2",
-    title: "Level1 Star",
-    level: "Beginner",
-    unlocked: true,
-    image: require("../../assets/images/badges/badge2.png"),
-  },
-  {
-    id: "3",
-    title: "Contributer",
-    level: "Medium",
-    unlocked: true,
-    image: require("../../assets/images/badges/badge3.png"),
-  },
-  {
-    id: "4",
-    title: "Math Wizard",
-    level: "Expert",
-    unlocked: true,
-    image: require("../../assets/images/badges/badge4.png"),
-  },
-  {
-    id: "5",
-    title: "Counting Star",
-    level: "Medium",
-    unlocked: true,
-    image: require("../../assets/images/badges/badge5.png"),
-  },
-  {
-    id: "6",
-    title: "Streak Master",
-    level: "Expert",
-    unlocked: false,
-    image: require("../../assets/images/badges/badge6.png"),
-  },
-  {
-    id: "7",
-    title: "Lucky 7",
-    level: "Medium",
-    unlocked: true,
-    image: require("../../assets/images/badges/badge7.png"),
-  },
-  {
-    id: "8",
-    title: "Master of Numbers",
-    level: "Expert",
-    unlocked: false,
-    image: require("../../assets/images/badges/badge8.png"),
-  },
-  {
-    id: "9",
-    title: "Level10 Star",
-    level: "Expert",
-    unlocked: false,
-    image: require("../../assets/images/badges/badge9.png"),
-  },
-];
-
-export default function AchievementsDashboard() {
+export default function AchievementsDashboard(){
   const router = useRouter();
+  const [achievements, setAchievements] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+
+  useEffect(() => {
+    loadAchievements();
+  }, []);
+
+  const loadAchievements = async () => {
+    try {
+        const token = await AsyncStorage.getItem("token");
+      const allRes = await fetch(`${API_BASE_URL}/achievements`);
+      const allData = await allRes.json();
+
+      const studentRes = await fetch(`${API_BASE_URL}/student/achievements`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      const earnedData = await studentRes.json()
+
+      const earnedIds = Array.isArray(earnedData) ? earnedData.map(ua => ua.achievement_id) : [];
+
+      const finalMap = allData.map((ach) => ({
+        id: ach.id.toString(),
+        title: ach.name,
+        level: ach.difficulty || "Beginner",
+        unlocked: earnedIds.includes(ach.id),
+        image: getBadgeImage(ach.id),
+      }));
+
+      setAchievements(finalMap);
+    }catch (error){
+      console.error("Error fetching achievements:", error);
+    }finally{
+      setLoading(false);
+    }
+  };
+
+  const getBadgeImage = (id) => {
+    const badgeMap = {
+      1: require("../../assets/images/badges/badge1.png"),
+      2: require("../../assets/images/badges/badge2.png"),
+      3: require("../../assets/images/badges/badge3.png"),
+      4: require("../../assets/images/badges/badge4.png"),
+      5: require("../../assets/images/badges/badge5.png"),
+      6: require("../../assets/images/badges/badge6.png"),
+      7: require("../../assets/images/badges/badge7.png"),
+      8: require("../../assets/images/badges/badge8.png"),
+      9: require("../../assets/images/badges/badge9.png"),
+
+    };
+    return badgeMap[id] || require("../../assets/images/badges/badge1.png");
+  }
+
 
   const renderAchievementCard = ({ item }) => {
     const cardBgColor = item.unlocked ? "#ffeddd" : "#e49e11";
@@ -115,6 +109,14 @@ export default function AchievementsDashboard() {
     );
   };
 
+  if (loading) {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center' }}>
+      <ActivityIndicator size="large" />
+    </View>
+  );
+}
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -128,7 +130,7 @@ export default function AchievementsDashboard() {
       {/* Grid of 2xCards */}
       <View style={styles.content}>
         <FlatList
-          data={GAMIFIED_ACHIEVEMENTS}
+          data={achievements}
           renderItem={renderAchievementCard}
           keyExtractor={(item) => item.id}
           numColumns={2}
@@ -173,9 +175,9 @@ export default function AchievementsDashboard() {
       </SafeAreaView>
     </View>
   );
+
 }
 
-// 5. Stylistic Deep Dive
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -341,3 +343,4 @@ const styles = StyleSheet.create({
     color: "#B8BCC7",
   },
 });
+

@@ -12,6 +12,7 @@ class AchievementSchema(BaseModel):
 
 class UserAchievementSchema(BaseModel):
     id: int
+    achievement_id: int
     achievement: AchievementSchema
     earned_at: datetime
 
