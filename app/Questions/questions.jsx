@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  Dimensions,
+  ImageBackground,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -28,8 +30,9 @@ export default function QuestionsScreen() {
   const scoreRef = useRef(0);
 
   const backgrounds = [
-    require("../assets/imgs/bg1.jpg"),
-    require("../assets/imgs/bg2.jpg"),
+    require("../../assets/images/bg1.jpg"),
+    require("../../assets/images/bg2.jpg"),
+
   ];
 
   const [randomBg, setRandomBg] = useState(
@@ -45,38 +48,51 @@ export default function QuestionsScreen() {
   },[]);
 
   const fetchQuestions = async (diff = "easy") => {
-    try{
-      const token = await AsyncStorage.getItem("token");
+  try {
+    const token = await AsyncStorage.getItem("token");
 
-      const response = await fetch(
-        `${API_BASE_URL}/topics/1/questions?difficulty=${diff}&limit=10`, //changed to accept difficulty as the parameter
-         {
-          headers: {
-            "Authorization": `Bearer ${token}` //sending the token 
-          }
-         }
-      );
-      const data = await response.json();
+    const response = await fetch(
+      `${API_BASE_URL}/topics/1/questions?difficulty=${diff}&limit=10`,
+      {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      }
+    );
 
-      const formatted = data.map((q) => ({
-        id: q.id,
-        question: q.question_text,
-        correct_answer: q.correct_ans,
-        choices: q.choices.map((c) => c.choice_text),
-        choiceObjects: q.choices,
+    //console.log("=== FETCH QUESTIONS RESPONSE STATUS:", response.status);
+    
+    const data = await response.json();
+    
+    //console.log("=== RAW DATA TYPE:", typeof data, Array.isArray(data));
+    //console.log("=== RAW DATA:", JSON.stringify(data, null, 2));
 
-      }));
+    const questions = Array.isArray(data) ? data : data.questions ?? data.items ?? data.data ?? [];
+    
+    //console.log("=== FIRST QUESTION KEYS:", questions[0] ? Object.keys(questions[0]) : "empty");
+    //console.log("=== FIRST QUESTION:", JSON.stringify(questions[0], null, 2));
 
-      setQuestions(formatted);
-    }catch(error){
-      console.error("Failed to fetch the questions:", error);
-    }finally{
-      setLoading(false);
-    }
-  };
+    const formatted = questions.map((q) => ({
+      id: q.id,
+      question: q.question_text,
+      correct_answer: (q.correct_ans ?? q.correct_answer ?? q.answer ?? "").trim(),
+      choices: q.choices.map((c) => (c.choice_text ?? "").trim()),
+      choiceObjects: q.choices,
+    }));
+
+    setQuestions(formatted);
+  } catch (error) {
+    console.error("Failed to fetch the questions:", error);
+  } finally {
+    setLoading(false);
+  }
+};
 
 
   const handleSelect = async (choice) => {
+    console.log("Selected:", JSON.stringify(choice));
+    console.log("Correct:", JSON.stringify(question.correct_answer));
+    console.log("Match:", choice === question.correct_answer);
     setSelected(choice);
     setShowFeedback(true); 
 
@@ -270,7 +286,7 @@ export default function QuestionsScreen() {
          >
          <Text style={styles.nextText}>Next Question</Text>
          </TouchableOpacity>
-         
+
           <Text style={styles.feedbackText}>Excellent!</Text>
         </View>
 

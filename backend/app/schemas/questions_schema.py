@@ -5,6 +5,7 @@ from app.models.user import DifficultyLevel, QuestionType
 class AnswerChoiceSchema(BaseModel):
     id: int
     choice_text: str
+    is_correct: bool
 
     class Config: 
         from_attributes = True
@@ -15,6 +16,7 @@ class QuestionsSchema(BaseModel):
     difficulty: DifficultyLevel
     question_type: QuestionType
     question_text: str
+    correct_ans: str
     choices: List[AnswerChoiceSchema] = []
 
     class Config:
