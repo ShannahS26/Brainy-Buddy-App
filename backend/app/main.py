@@ -259,12 +259,12 @@ def answer_question(
         progress.difficulty_level = DifficultyLevel.easy
 
 
-    progress.times_attempted += 1
+    progress.times_attempted = (progress.times_attempted or 0) + 1
 
     if is_correct:
-        progress.times_correct += 1
-        progress.current_streak += 1
-        progress.wrong_streak = 0
+        progress.times_correct = (progress.times_correct or 0) + 1
+        progress.current_streak = (progress.current_streak or 0) + 1
+        progress.wrong_streak = (progress.wrong_streak or 0) + 1
     else:
         progress.wrong_streak += 1
         progress.current_streak = 0

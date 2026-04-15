@@ -13,12 +13,13 @@ export default function ParentDashboard(){
             const token = await AsyncStorage.getItem("token");
             const results = await Promise.all(
                 childrenList.map(async (child) => {
-                    const res = await fetch(`${API_BASE_URL}/parent/child/$child.id/summary`,
+                    const res = await fetch(`${API_BASE_URL}/parent/child/${child.id}/summary`,
                         {
                             headers: {Authorization: `Bearer ${token}`},
                         }
                     );
                     const data = await res.json();
+                    return [child.id, data]
                 })
             );
 
@@ -90,8 +91,8 @@ export default function ParentDashboard(){
                                 }
                             >
                                 <View style={styles.childCard}>
-                                    <Text styles={styles.name}>{item.username}</Text>
-                                    <Text styles={styles.email}>{item.email}</Text>
+                                    <Text style={styles.name}>{item.username}</Text>
+                                    <Text style={styles.email}>{item.email}</Text>
 
                                     <View style={styles.progressBadge}>
                                         <Text style={styles.progressText}>

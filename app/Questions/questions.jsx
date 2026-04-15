@@ -137,20 +137,24 @@ export default function QuestionsScreen() {
 
     try{
       const result = await fetch(
-        `${API_BASE_URL}/questions/submit` ,{
+        `${API_BASE_URL}/questions/answer?question_id=${question.id}&answer=${choice}` ,
+        {
           method: "POST",
-          headers: {"Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`, 
+          headers: {
+            Authorization: `Bearer ${token}`, 
           },
-          body: JSON.stringify({
-            user_id: 1,
-            question_id: question.id,
-            answer_choice_id: choiceObj.id,
-          }),
         }
       );
-      const data = await result.json();
-      console.log(" Submit response:", data); //testing data
+      const text = await result.text();
+      console.log(" RAW response", text); //testing
+
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        console.log("Response is not JSON");
+      }
+      console.log("Reponse is not JSON");
     }catch(error){
       console.error("Failed to submit answer:", error);
     }

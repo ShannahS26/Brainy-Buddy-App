@@ -154,7 +154,7 @@ export default function ActivityMap() {
                 {
                     shouldPlay: true,
                     isLooping: true,
-                    volume: 0.5,
+                    volume: 0.9,
                 }
             );
             soundRef.current = sound;
@@ -322,8 +322,8 @@ const styles = StyleSheet.create({
     /* Add pathOverlay here when found" */
     levelNode: {
         position: "absolute",
-        width: 86,
-        height: 86,
+        width: 90,
+        height: 90,
         borderRadius: 43,
         alignItems: "center",
         justifyContent: "center",
