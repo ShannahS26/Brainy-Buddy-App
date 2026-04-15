@@ -1,16 +1,16 @@
-import React, {useState} from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage"; //adding for testing for questions
+import { router } from "expo-router";
+import { useState } from "react";
 import {
+    Alert,
     SafeAreaView,
-    View, 
+    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    StyleSheet,
-    Alert
+    View
 } from "react-native";
-import { router } from "expo-router";
 import { API_BASE_URL } from "../lib/api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ChildLoginScreen() {
     const [username, setUsername] = useState("");
@@ -35,6 +35,10 @@ export default function ChildLoginScreen() {
             await AsyncStorage.setItem("token", data.access_token);
             await AsyncStorage.setItem("username", data.username);
             await AsyncStorage.setItem("user_id", String(data.user_id));
+
+            //adding for testing for questions
+            await AsyncStorage.setItem("token", data.access_token);
+            await AsyncStorage.setItem("user_id", String(data.id)); 
 
             Alert.alert("Welcome!", `Hi ${data.username}!`);
             router.push("/ActivityMap");

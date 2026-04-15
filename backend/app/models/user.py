@@ -22,6 +22,7 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     parent = relationship("Parents", back_populates= "children")
     progress =  relationship("UserProgress", back_populates = "user", cascade = "all, delete")
+    achievements = relationship("UserAchievement", back_populates="user")
 
 class Parents(Base):
     __tablename__ = "parents"
@@ -109,3 +110,20 @@ class QuestionAttempt(Base):
     is_correct = Column(Boolean)
     difficulty = Column(Enum(DifficultyLevel))
     answered_at = Column(DateTime, default=datetime.datetime.utcnow)
+class Achievement(Base):
+    __tablename__ = "achievements"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), unique=True, nullable=False)
+    description = Column(String(250), nullable=False)
+    badge_icon = Column(String(10), nullable=False) #used for storing the actual image
+    user_achievements = relationship("UserAchievement", back_populates="achievement")
+
+class UserAchievement(Base):
+    __tablename__ = "user_achievements"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    achievement_id = Column(Integer, ForeignKey("achievements.id"), nullable=False)
+    earned_at = Column(DateTime, default=datetime.datetime.utcnow)
+    user = relationship("User", back_populates="achievements")
+    achievement = relationship("Achievement", back_populates="user_achievements")
+    

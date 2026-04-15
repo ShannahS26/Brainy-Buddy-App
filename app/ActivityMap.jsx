@@ -224,16 +224,9 @@ export default function ActivityMap() {
                                     style={styles.navImage}
                             />
                         </TouchableOpacity>
-                        <TouchableOpacity>
+                        <TouchableOpacity onPress={() => router.push("/tabs/achievements")}>
                             <Image 
                                 source={require("../assets/images/achievement.png")}
-                                style={styles.navAchievement}
-                            />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity>
-                            <Image 
-                                source={require("../assets/images/stats.png")}
                                 style={styles.navAchievement}
                             />
                         </TouchableOpacity>

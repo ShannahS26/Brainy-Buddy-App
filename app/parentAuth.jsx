@@ -1,17 +1,16 @@
-import React, {useState} from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
+import { useState } from "react";
 import {
+    Alert,
     SafeAreaView,
-    View, 
+    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    StyleSheet,
-    Alert
+    View
 } from "react-native";
-import { router } from "expo-router";
 import { API_BASE_URL } from "../lib/api";
-import { Assets } from "@react-navigation/elements";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ParentAuthScreen() {
     const [mode, setMode] = useState("login");
@@ -153,10 +152,6 @@ export default function ParentAuthScreen() {
 
                 <TouchableOpacity onPress={() => router.back()}>
                     <Text style={styles.backText}>Back</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity  style={[styles.submitBtn, {marginTop: 12}]} onPress={testBackend}>
-                    <Text style={styles.backText}>Test Backend</Text>
                 </TouchableOpacity>
                 
             </View>

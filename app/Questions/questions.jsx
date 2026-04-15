@@ -15,7 +15,7 @@ import {
 
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { API_BASE_URL } from "../../lib/api";
 
 export default function QuestionsScreen() {
@@ -28,6 +28,7 @@ export default function QuestionsScreen() {
   const [score, setScore] = useState(0);     
   const [difficulty, setDifficulty] = useState("easy");
   const scoreRef = useRef(0);
+  const { topicId } = useLocalSearchParams(); 
 
   const backgrounds = [
     require("../../assets/images/bg1.jpg"),
@@ -52,7 +53,7 @@ export default function QuestionsScreen() {
     const token = await AsyncStorage.getItem("token");
 
     const response = await fetch(
-      `${API_BASE_URL}/topics/1/questions?difficulty=${diff}&limit=10`,
+      `${API_BASE_URL}/topics/${topicId}/questions?difficulty=${diff}&limit=10`,
       {
         headers: {
           "Authorization": `Bearer ${token}`
@@ -60,17 +61,12 @@ export default function QuestionsScreen() {
       }
     );
 
-    //console.log("=== FETCH QUESTIONS RESPONSE STATUS:", response.status);
     
     const data = await response.json();
     
-    //console.log("=== RAW DATA TYPE:", typeof data, Array.isArray(data));
-    //console.log("=== RAW DATA:", JSON.stringify(data, null, 2));
 
     const questions = Array.isArray(data) ? data : data.questions ?? data.items ?? data.data ?? [];
     
-    //console.log("=== FIRST QUESTION KEYS:", questions[0] ? Object.keys(questions[0]) : "empty");
-    //console.log("=== FIRST QUESTION:", JSON.stringify(questions[0], null, 2));
 
     const formatted = questions.map((q) => ({
       id: q.id,
