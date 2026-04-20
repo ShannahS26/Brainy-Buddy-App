@@ -1,50 +1,137 @@
-# Welcome to your Expo app 👋
+# 🧠 Brainy Buddy
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app)!
+An interactive children's learning application built for **ITSC 4155 (Software Development Projects)** at UNC Charlotte. Brainy Buddy helps young learners practice foundational skills through engaging quizzes and a fun, user-friendly interface.
 
-## Get started
+> **Team** — Shannah Smith, Janvi Ghandi, Ini Ogunsanya, Jie Zhou, Taniyah Armstrong  
+> **Status:**Completed - Adding more features in the future
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## Features
 
-2. Start the app
+- 🎯 **Interactive Quizzes** — Engaging, hardcoded question sets designed for young learners
+- 🎨 **Kid-Friendly UI** — Clean, colorful interface built with usability in mind
+- ⚡ **Fast Backend** — REST API powered by FastAPI for smooth data handling
+- 🗄️ **Persistent Data** — SQLite database to store and manage app data
+- 🔗 **Frontend & Backend Integration** — React Native frontend connected seamlessly to the FastAPI backend
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## Tech Stack
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React Native (Expo) |
+| Backend | FastAPI |
+| Database | SQLite |
+| Language | Python, JavaScript |
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
+##Getting Started
 
-When you're ready, run:
+### Prerequisites
+- Python 3.8 or higher
+- Node.js & npm
+
+### Backend Setup
 
 ```bash
-npm run reset-project
+# 1. Clone the repository
+git clone https://github.com/yourusername/brainy-buddy.git
+cd brainy-buddy
+
+# 2. Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate        # On Windows: venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Run the backend
+uvicorn main:app --reload
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Frontend Setup
 
-## Learn more
+```bash
+# From the root of the repository, install dependencies
+npm install
 
-To learn more about developing your project with Expo, look at the following resources:
+# Start the Expo development server
+npx expo start
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+You'll find options to open the app in:
+- **Expo Go** app on your phone
+- **Android emulator**
+- **iOS simulator**
 
-## Join the community
+---
 
-Join our community of developers creating universal apps.
+## API Overview
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The backend exposes REST API endpoints for managing quiz data and application resources. CRUD operations are implemented using FastAPI, with SQLite as the database layer.
+
+Access the interactive API docs at:
+```
+http://127.0.0.1:8000/docs
+```
+
+---
+
+## Database
+
+The app uses **SQLite** for lightweight, file-based data storage. The database schema was designed to support the quiz content and any associated application data, with CRUD operations handled through FastAPI endpoints.
+
+---
+
+## Project Structure
+
+```
+Brainy-Buddy-App/
+├── backend/                  # FastAPI backend
+│   ├── app/
+│   │   ├── main.py           # FastAPI app entry point
+│   │   ├── models/           # SQLAlchemy database models
+│   │   ├── routes/           # API route definitions
+│   │   ├── schemas/          # Pydantic schemas for validation
+│   │   ├── db/               # Database configuration
+│   │   └── __init__.py
+│   ├── brainypop.db          # SQLite database file
+│   └── buddy_questions.py    # Hardcoded question data
+├── app/                      # Expo React Native frontend
+│   ├── Questions/            # Quiz question screens
+│   ├── tabs/                 # Tab navigation screens
+│   ├── ActivityMap.jsx       # Activity map screen
+│   ├── ParentDashboard.jsx   # Parent dashboard screen
+│   ├── SignIn.jsx            # Sign in screen
+│   ├── childLogin.jsx        # Child login screen
+│   ├── childProgress.jsx     # Child progress tracking
+│   ├── createChild.jsx       # Create child profile
+│   └── parentAuth.jsx        # Parent authentication
+├── components/               # Reusable UI components
+├── assets/images/            # App images and icons
+├── requirements.txt          # Python dependencies
+├── package.json              # Node dependencies
+└── app.json                  # Expo configuration
+```
+
+---
+
+## Contributors
+
+| Name | Role |
+|------|------|
+| Shannah Smith | Database Engineer & Backend Developer |
+| Jie Zhou | Backend Developer |
+| Taniyah Armstrong | API Integration |
+| Janvi Ghandi | Frontend Developer |
+| Ini Ogunsanya | UI/UX Designer |
+
+---
+
+##Course
+
+Developed as a capstone project for **ITSC 4155 — Software Development Projects**  
+University of North Carolina at Charlotte
