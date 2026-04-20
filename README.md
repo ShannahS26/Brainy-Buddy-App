@@ -131,7 +131,7 @@ Brainy-Buddy-App/
 
 ---
 
-##Course
+## Course
 
 Developed as a capstone project for **ITSC 4155 — Software Development Projects**  
 University of North Carolina at Charlotte
