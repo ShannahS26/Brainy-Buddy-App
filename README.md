@@ -28,7 +28,7 @@ An interactive children's learning application built for **ITSC 4155 (Software D
 
 ---
 
-##Getting Started
+## Getting Started
 
 ### Prerequisites
 - Python 3.8 or higher
