@@ -1,4 +1,4 @@
-# 🧠 Brainy Buddy
+# Brainy Buddy
 
 An interactive children's learning application built for **ITSC 4155 (Software Development Projects)** at UNC Charlotte. Brainy Buddy helps young learners practice foundational skills through engaging quizzes and a fun, user-friendly interface.
 
@@ -9,11 +9,11 @@ An interactive children's learning application built for **ITSC 4155 (Software D
 
 ## Features
 
-- 🎯 **Interactive Quizzes** — Engaging, hardcoded question sets designed for young learners
-- 🎨 **Kid-Friendly UI** — Clean, colorful interface built with usability in mind
-- ⚡ **Fast Backend** — REST API powered by FastAPI for smooth data handling
-- 🗄️ **Persistent Data** — SQLite database to store and manage app data
-- 🔗 **Frontend & Backend Integration** — React Native frontend connected seamlessly to the FastAPI backend
+-  **Interactive Quizzes** — Engaging, hardcoded question sets designed for young learners
+-  **Kid-Friendly UI** — Clean, colorful interface built with usability in mind
+-  **Fast Backend** — REST API powered by FastAPI for smooth data handling
+-  **Persistent Data** — SQLite database to store and manage app data
+-  **Frontend & Backend Integration** — React Native frontend connected seamlessly to the FastAPI backend
 
 ---
 
